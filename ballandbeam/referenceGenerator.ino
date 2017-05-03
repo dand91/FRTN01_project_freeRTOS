@@ -1,6 +1,3 @@
-const int MANUAL = 0;
-const int SQUARE = 1;
-const int OPTIMAL = 2;
 
 const double K_PHI = 4.5;
 const double K_V = 10.0;
@@ -8,7 +5,7 @@ const double K_V = 10.0;
 double amplitude;
 double period;
 double max_ctrl;
-double sign = -1.0;
+double sign;
 double ref;
 double manual;
 
@@ -24,7 +21,7 @@ void ref_init(){
   manual = 0.0;
   ref = 0.0;
   max_ctrl = 0.1;
-  refMode = MANUAL;
+  sign = -1.0;
   
   }
 
@@ -32,9 +29,9 @@ void TaskReference(void *pvParameters) {
         
     (void) pvParameters;
 
-    double h = 0;
-    double timebase = millis();
-    double timeleft = 0;
+    long h = 10;
+    long timebase = millis();
+    long timeleft = 0;
     long ref_duration;
     
     double setpoint = 0.0;
@@ -44,14 +41,17 @@ void TaskReference(void *pvParameters) {
     double now = 0.0;
     double t = 0.0;
     double ref_t = 0.0;
-    double tf = 0.001 * timebase;
+    double tf = 0.001 * (double) timebase;
     double ts = tf;
     double T = 0.0;
     double zf = 0.0;
     double z0 = 0.0;  
 
-
     for(;;){
+
+      Serial.print(" REFERENCE ");
+
+      now = 0.001 * (double) timebase;
 
       if(mode == MANUAL){
         
@@ -67,9 +67,11 @@ void TaskReference(void *pvParameters) {
           timeleft = 0;
               
         }
+        
         if(timeleft <= 0){
 
           timeleft += (long)(500.0 * period); 
+          sign = -sign;
           
         }
         
@@ -97,21 +99,22 @@ void TaskReference(void *pvParameters) {
         if(ref != setpoint){
 
           t = now - ts;
+          
           if(t <= T){
 
-              uff = -u0;
-              phiff = K_PHI * u0 * t;
+              uff = u0;
+              phiff = -K_PHI * u0 * t;
               ref = z0 + K_PHI * K_V * u0 * t * t * t/6;
               
             }else if(t <= 3.0 * T){
       
-              uff = u0;
+              uff = -u0;
               phiff = K_PHI * u0 * (t - 2 * T);
               ref = z0 - K_PHI * K_V * u0 * (t*t*t/6 - T*t*t + T*T*t - T*T*T/3);
               
             }else if (t <= 4.0 * T){
 
-              uff = -u0;
+              uff = u0;
               phiff = -K_PHI * u0 * (t - 4 * T);
               ref = z0 + K_PHI * K_V * u0 * (t*t*t/6 - 2*T*t*t + 8*T*T*t - 26*T*T*T/3);
               
@@ -126,11 +129,17 @@ void TaskReference(void *pvParameters) {
           }
         }
 
+        Serial.print(" test2 ");
+        Serial.print(timeleft);
+        Serial.print(" time ");
+        Serial.println(ref);
+        
         timebase += h;
         ref_duration = timebase - millis();
+        
         if(ref_duration > 0){
 
-          vTaskDelay(1);
+          vTaskDelay(10 / portTICK_PERIOD_MS); 
           
         }
     }
@@ -165,7 +174,8 @@ double referenceGetRef(){
     
   }
 
-  return ref;  
+  return ref; 
+   
   }
 
 double referenceGetPhiff(){
@@ -177,6 +187,7 @@ double referenceGetPhiff(){
   }
 
   return 0.0;  
+  
   }
 
 double referenceGetUff(){

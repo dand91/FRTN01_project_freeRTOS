@@ -5,8 +5,12 @@ const int OFF = 0;
 const int BEAM = 1;
 const int BALL = 2;
 
-int mode = 0;
-int refMode = 0;
+const int MANUAL = 0;
+const int SQUARE = 1;
+const int OPTIMAL = 2;
+
+int mode = 1;
+int refMode = 1;
 
 double uMin = -10.0;
 double uMax = 10.0;
@@ -29,14 +33,15 @@ TaskHandle_t xHandle;
 
 void TaskRun( void *pvParameters );
 void TaskReference( void *pvParameters );
-void TaskOperationModeButtonRead( void *pvParameters );
-void TaskReferenceModeButtonRead( void *pvParameters );
+//void TaskOperationModeButtonRead( void *pvParameters );
+//void TaskReferenceModeButtonRead( void *pvParameters );
 
 // the setup function runs once when you press reset or power the board
 void setup() {
       
   Serial.begin(9600);
-  
+
+  ref_init();
   PI_init();
 
   // Inner semaphore
@@ -58,6 +63,9 @@ void setup() {
       xSemaphoreGive( ( xSerialSemaphore_outer ) );  // Make the Serial Port available for use, by "Giving" the Semaphore.
   }
 
+
+  Serial.println("Semaphores initiated");
+
   xTaskCreate(
     
     TaskRun
@@ -65,29 +73,29 @@ void setup() {
     ,  128 // This stack size can be checked & adjusted by reading Highwater
     ,  NULL
     ,  1  // priority
-    ,  xHandle 
+    ,  NULL 
     
     );
 
   xTaskCreate(
     
     TaskReference
-    ,  (const portCHAR *) "Run"
+    ,  (const portCHAR *) "Reference"
     ,  128 // This stack size can be checked & adjusted by reading Highwater
     ,  NULL
     ,  1  // priority
-    ,  xHandle 
+    ,  NULL 
     
     );
 
   xTaskCreate(
     
     TaskOperationModeButtonRead
-    ,  (const portCHAR *) "Run"
+    ,  (const portCHAR *) "Operations"
     ,  128 // This stack size can be checked & adjusted by reading Highwater
     ,  NULL
     ,  5  // priority
-    ,  xHandle 
+    ,  NULL 
     
     );
     
@@ -95,14 +103,16 @@ void setup() {
     xTaskCreate(
     
     TaskReferenceModeButtonRead
-    ,  (const portCHAR *) "Run"
+    ,  (const portCHAR *) "Reference"
     ,  128 // This stack size can be checked & adjusted by reading Highwater
     ,  NULL
     ,  5  // priority
-    ,  xHandle 
+    ,  NULL 
     
     );
-    
+
+     Serial.println("Tasks initiated");
+
   // Now the task scheduler, which takes over control of scheduling individual tasks, is automatically started.
 }
 
@@ -134,29 +144,34 @@ void TaskOperationModeButtonRead(void *pvParameters) {
     (void) pvParameters;
 
     if(digitalRead(1) == HIGH){
-        mode = 0;
-     }else if(digitalRead(1) == HIGH){
-        mode = 1;
-     }else if(digitalRead(1) == HIGH){
-        mode = 2;
+        mode = OFF;
+     }else if(digitalRead(2) == HIGH){
+        mode = BEAM;
+     }else if(digitalRead(3) == HIGH){
+        mode = BALL;
      }       
+
+     vTaskDelay(10 / portTICK_PERIOD_MS); 
 }
 
 void TaskReferenceModeButtonRead(void *pvParameters) {
         
     (void) pvParameters;
 
-    if(digitalRead(1) == HIGH){
-        refMode = 0;
-     }else if(digitalRead(1) == HIGH){
-        refMode = 1;
-     }else if(digitalRead(1) == HIGH){
-        refMode = 2;
+    if(digitalRead(4) == HIGH){
+        refMode = MANUAL;
+     }else if(digitalRead(5) == HIGH){
+        refMode = SQUARE;
+     }else if(digitalRead(6) == HIGH){
+        refMode = OPTIMAL;
      }       
+
+     vTaskDelay(10 / portTICK_PERIOD_MS); 
 }
 
 void TaskRun(void *pvParameters) {
-        
+
+  Serial.print("Running");
   (void) pvParameters;
 
   long duration;
@@ -171,7 +186,12 @@ void TaskRun(void *pvParameters) {
       
      }else if(mode == 1){
 
+        Serial.println(" test ref");
+
         double ref_ang = referenceGetRef();
+        
+        Serial.print(ref_ang);
+        
         double ang = analogRead(beam_pin); 
         double u_ang;
 
