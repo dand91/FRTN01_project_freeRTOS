@@ -29,15 +29,22 @@
   }
 
   void PI_updateState(float u) {
+    
     if (PIParameters[5] == 1.0) {
+      
       PI_I = PI_I + (PIParameters[0] * PIParameters[4] / PIParameters[1]) * PI_e + (PIParameters[4] / PIParameters[2]) * (u - PI_v);
+      
     } else {
+      
       PI_I = 0.0;
+      
     }
   }
 
   long PI_getHMillis() {
+    
     return (long)(PIParameters[4] * 1000.0);
+    
   }
 
   double* PI_getParameters(){

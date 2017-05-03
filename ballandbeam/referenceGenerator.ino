@@ -31,6 +31,8 @@ void TaskReference(void *pvParameters) {
         
     (void) pvParameters;
 
+    vTaskPrioritySet( xHandle, tskIDLE_PRIORITY + 2);
+    
     long h = 10;
     long timebase = millis();
     long timeleft = 0;

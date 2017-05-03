@@ -34,8 +34,8 @@ TaskHandle_t xHandle;
 
 void TaskRun( void *pvParameters );
 void TaskReference( void *pvParameters );
-//void TaskOperationModeButtonRead( void *pvParameters );
-//void TaskReferenceModeButtonRead( void *pvParameters );
+void TaskOperationModeButtonRead( void *pvParameters );
+void TaskReferenceModeButtonRead( void *pvParameters );
 
 // the setup function runs once when you press reset or power the board
 void setup() {
@@ -44,6 +44,7 @@ void setup() {
 
   ref_init();
   PI_init();
+  PID_init();
 
   // Inner semaphore
       
@@ -80,7 +81,7 @@ void setup() {
     
     TaskRun
     ,  (const portCHAR *) "Run"
-    ,  128 // This stack size can be checked & adjusted by reading Highwater
+    ,  256 // This stack size can be checked & adjusted by reading Highwater
     ,  NULL
     ,  1  // priority
     ,  NULL 
@@ -98,28 +99,28 @@ void setup() {
     
     );
 
-//  xTaskCreate(
-//    
-//    TaskOperationModeButtonRead
-//    ,  (const portCHAR *) "Operations"
-//    ,  128 // This stack size can be checked & adjusted by reading Highwater
-//    ,  NULL
-//    ,  5  // priority
-//    ,  NULL 
-//    
-//    );
-//    
-//
-//    xTaskCreate(
-//    
-//    TaskReferenceModeButtonRead
-//    ,  (const portCHAR *) "Reference"
-//    ,  128 // This stack size can be checked & adjusted by reading Highwater
-//    ,  NULL
-//    ,  5  // priority
-//    ,  NULL 
-//    
-//    );
+  xTaskCreate(
+    
+    TaskOperationModeButtonRead
+    ,  (const portCHAR *) "OperationsButton"
+    ,  64 // This stack size can be checked & adjusted by reading Highwater
+    ,  NULL
+    ,  1  // priority
+    ,  NULL 
+    
+    );
+    
+
+    xTaskCreate(
+    
+    TaskReferenceModeButtonRead
+    ,  (const portCHAR *) "ReferenceButton"
+    ,  64 // This stack size can be checked & adjusted by reading Highwater
+    ,  NULL
+    ,  1  // priority
+    ,  NULL 
+    
+    );
     
 //     vTaskStartScheduler();
      Serial.println("Tasks initiated");
@@ -127,11 +128,7 @@ void setup() {
   // Now the task scheduler, which takes over control of scheduling individual tasks, is automatically started.
 }
 
-void loop()
-{
-  // Empty. Things are done in Tasks.
-}
-
+void loop(){}
 
 float limit(float u, float umin, float umax) {
 
@@ -149,10 +146,13 @@ float limit(float u, float umin, float umax) {
 
 }
 
-
 void TaskOperationModeButtonRead(void *pvParameters) {
-        
+    
     (void) pvParameters;
+
+     vTaskPrioritySet( xHandle, tskIDLE_PRIORITY + 1);
+
+  for(;;){
 
     if(digitalRead(1) == HIGH){
         mode = OFF;
@@ -163,11 +163,17 @@ void TaskOperationModeButtonRead(void *pvParameters) {
      }       
 
      vTaskDelay(10 / portTICK_PERIOD_MS); 
+
+  }
 }
 
 void TaskReferenceModeButtonRead(void *pvParameters) {
         
     (void) pvParameters;
+
+     vTaskPrioritySet( xHandle, tskIDLE_PRIORITY + 1);
+
+  for(;;){
 
     if(digitalRead(4) == HIGH){
         refMode = MANUAL;
@@ -178,11 +184,15 @@ void TaskReferenceModeButtonRead(void *pvParameters) {
      }       
 
      vTaskDelay(10 / portTICK_PERIOD_MS); 
+
+  }
 }
 
 void TaskRun(void *pvParameters) {
 
   (void) pvParameters;
+
+  vTaskPrioritySet( xHandle, tskIDLE_PRIORITY + 3);
 
   Serial.print("Running");
 
@@ -198,13 +208,16 @@ void TaskRun(void *pvParameters) {
       
      }else if(mode == 1){
 
-        Serial.println(" test ref");
-
         double ref_ang = referenceGetRef();
-        
-        Serial.print(ref_ang);
-        
+             
         double ang = analogRead(beam_pin); 
+
+        Serial.print(" ref ");
+        Serial.print(ref_ang);
+        Serial.print(" ang ");
+        Serial.print(ang);
+        Serial.println();
+
         double u_ang;
 
         taken_inner = true;
@@ -214,8 +227,14 @@ void TaskRun(void *pvParameters) {
             if ( xSemaphoreTake( xSerialSemaphore_inner, ( TickType_t ) 5 ) == pdTRUE ){
 
                       // Calculate signal
+
+                      Serial.print(" result ");
+                      Serial.print(PI_calculateOutput(ang, ref_ang));
                       double u_ang = limit(PI_calculateOutput(ang, ref_ang), uMin, uMax);
-                      
+
+                      Serial.print(" u_ang ");
+                      Serial.print(u_ang);
+                       
                       // Set output
                       analogWrite(beam_pin,u_ang);
                       
@@ -238,6 +257,7 @@ void TaskRun(void *pvParameters) {
         double ref_pos = referenceGetRef();
         double ang_ref;
         double u;
+        
         phiff = referenceGetPhiff();
         uff = referenceGetUff();
         
@@ -275,7 +295,7 @@ void TaskRun(void *pvParameters) {
                 
           }else{
 
-            vTaskDelay(1);
+            vTaskDelay(1 / portTICK_PERIOD_MS);
             
           }
         }
