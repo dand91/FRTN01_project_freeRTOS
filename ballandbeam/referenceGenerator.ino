@@ -2,6 +2,8 @@
 const double K_PHI = 4.5;
 const double K_V = 10.0;
 
+boolean taken_ref;
+
 double amplitude;
 double period;
 double max_ctrl;
@@ -49,90 +51,105 @@ void TaskReference(void *pvParameters) {
 
     for(;;){
 
-      Serial.print(" REFERENCE ");
+//      Serial.print(" REFERENCE ");
 
       now = 0.001 * (double) timebase;
-
-      if(mode == MANUAL){
-        
-        setpoint = manual;
-        ref = manual;
-        
-      }else{
-
-        timeleft -= h;
-
-        if(getParChanged()){
-          
-          timeleft = 0;
-              
-        }
-        
-        if(timeleft <= 0){
-
-          timeleft += (long)(500.0 * period); 
-          sign = -sign;
-          
-        }
-        
-        new_setpoint = amplitude * sign;
-
-        if(new_setpoint != setpoint){
-
-            if(refMode == SQUARE){
-              
-                setpoint = new_setpoint;
-                ref = setpoint;     
-            
-            }else if(refMode == OPTIMAL){
-              
-                ts = now;
-                z0 = ref;
-                zf = new_setpoint;
-                distance = zf - z0;
-
-                // TODO
-            }
-
-        }
-
-        if(ref != setpoint){
-
-          t = now - ts;
-          
-          if(t <= T){
-
-              uff = u0;
-              phiff = -K_PHI * u0 * t;
-              ref = z0 + K_PHI * K_V * u0 * t * t * t/6;
-              
-            }else if(t <= 3.0 * T){
       
-              uff = -u0;
-              phiff = K_PHI * u0 * (t - 2 * T);
-              ref = z0 - K_PHI * K_V * u0 * (t*t*t/6 - T*t*t + T*T*t - T*T*T/3);
+      taken_ref = true;
+  
+      while(taken_ref){
+        
+          if ( xSemaphoreTake( xSerialSemaphore_ref, ( TickType_t ) 5 ) == pdTRUE ){
+        
+            if(mode == MANUAL){
               
-            }else if (t <= 4.0 * T){
-
-              uff = u0;
-              phiff = -K_PHI * u0 * (t - 4 * T);
-              ref = z0 + K_PHI * K_V * u0 * (t*t*t/6 - 2*T*t*t + 8*T*T*t - 26*T*T*T/3);
+              setpoint = manual;
+              ref = manual;
               
             }else{
+        
+              timeleft -= h;
+        
+              if(getParChanged()){
+                
+                timeleft = 0;
+                    
+              }
               
-              uff = 0.0;
-              phiff = 0.0;
-              ref = setpoint;
+              if(timeleft <= 0){
+        
+                timeleft += (long)(500.0 * period); 
+                sign = -sign;
+                
+              }
               
-            }
-             
-          }
-        }
-
-        Serial.print(" test2 ");
-        Serial.print(timeleft);
-        Serial.print(" time ");
-        Serial.println(ref);
+              new_setpoint = amplitude * sign;
+        
+              if(new_setpoint != setpoint){
+        
+                  if(refMode == SQUARE){
+                    
+                      setpoint = new_setpoint;
+                      ref = setpoint;     
+                  
+                  }else if(refMode == OPTIMAL){
+                    
+                      ts = now;
+                      z0 = ref;
+                      zf = new_setpoint;
+                      distance = zf - z0;
+        
+                      // TODO
+                  }
+              }
+        
+              if(ref != setpoint){
+        
+                t = now - ts;
+                
+                if(t <= T){
+        
+                    uff = u0;
+                    phiff = -K_PHI * u0 * t;
+                    ref = z0 + K_PHI * K_V * u0 * t * t * t/6;
+                    
+                  }else if(t <= 3.0 * T){
+            
+                    uff = -u0;
+                    phiff = K_PHI * u0 * (t - 2 * T);
+                    ref = z0 - K_PHI * K_V * u0 * (t*t*t/6 - T*t*t + T*T*t - T*T*T/3);
+                    
+                  }else if (t <= 4.0 * T){
+        
+                    uff = u0;
+                    phiff = -K_PHI * u0 * (t - 4 * T);
+                    ref = z0 + K_PHI * K_V * u0 * (t*t*t/6 - 2*T*t*t + 8*T*T*t - 26*T*T*T/3);
+                    
+                  }else{
+                    
+                    uff = 0.0;
+                    phiff = 0.0;
+                    ref = setpoint;
+                    
+                  }
+                   
+                }
+              }
+              
+                  xSemaphoreGive( xSerialSemaphore_ref ); // Now free or "Give" the Serial Port for others.
+                  taken_ref = false;
+                      
+            }else{
+          
+            vTaskDelay(1 / portTICK_PERIOD_MS);
+          
+         }    
+      }
+      
+//        Serial.print(" test2 ");
+//        Serial.print(timeleft);
+//        Serial.print(" time ");
+//        Serial.println(ref);
         
         timebase += h;
         ref_duration = timebase - millis();

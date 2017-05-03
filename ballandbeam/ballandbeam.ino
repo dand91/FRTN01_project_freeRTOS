@@ -28,6 +28,7 @@ boolean taken_outer;
 
 SemaphoreHandle_t xSerialSemaphore_inner;
 SemaphoreHandle_t xSerialSemaphore_outer;
+SemaphoreHandle_t xSerialSemaphore_ref;
 
 TaskHandle_t xHandle;
 
@@ -63,6 +64,15 @@ void setup() {
       xSemaphoreGive( ( xSerialSemaphore_outer ) );  // Make the Serial Port available for use, by "Giving" the Semaphore.
   }
 
+  // Reference semaphore
+      
+  if ( xSerialSemaphore_ref == NULL )  // Check to confirm that the Serial Semaphore has not already been created.
+  {
+    xSerialSemaphore_ref = xSemaphoreCreateMutex();  // Create a mutex semaphore we will use to manage the Serial Port
+    if ( ( xSerialSemaphore_ref ) != NULL )
+      xSemaphoreGive( ( xSerialSemaphore_ref ) );  // Make the Serial Port available for use, by "Giving" the Semaphore.
+  }
+
 
   Serial.println("Semaphores initiated");
 
@@ -88,29 +98,30 @@ void setup() {
     
     );
 
-  xTaskCreate(
+//  xTaskCreate(
+//    
+//    TaskOperationModeButtonRead
+//    ,  (const portCHAR *) "Operations"
+//    ,  128 // This stack size can be checked & adjusted by reading Highwater
+//    ,  NULL
+//    ,  5  // priority
+//    ,  NULL 
+//    
+//    );
+//    
+//
+//    xTaskCreate(
+//    
+//    TaskReferenceModeButtonRead
+//    ,  (const portCHAR *) "Reference"
+//    ,  128 // This stack size can be checked & adjusted by reading Highwater
+//    ,  NULL
+//    ,  5  // priority
+//    ,  NULL 
+//    
+//    );
     
-    TaskOperationModeButtonRead
-    ,  (const portCHAR *) "Operations"
-    ,  128 // This stack size can be checked & adjusted by reading Highwater
-    ,  NULL
-    ,  5  // priority
-    ,  NULL 
-    
-    );
-    
-
-    xTaskCreate(
-    
-    TaskReferenceModeButtonRead
-    ,  (const portCHAR *) "Reference"
-    ,  128 // This stack size can be checked & adjusted by reading Highwater
-    ,  NULL
-    ,  5  // priority
-    ,  NULL 
-    
-    );
-
+//     vTaskStartScheduler();
      Serial.println("Tasks initiated");
 
   // Now the task scheduler, which takes over control of scheduling individual tasks, is automatically started.
@@ -171,8 +182,9 @@ void TaskReferenceModeButtonRead(void *pvParameters) {
 
 void TaskRun(void *pvParameters) {
 
-  Serial.print("Running");
   (void) pvParameters;
+
+  Serial.print("Running");
 
   long duration;
   long t = millis();
@@ -269,7 +281,6 @@ void TaskRun(void *pvParameters) {
         }
      } 
      
-      
       t = t + PI_getHMillis();
       
       duration = t - millis();
