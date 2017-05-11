@@ -19,7 +19,7 @@
     PIDParameters[3] = 10.0; // Tr
     PIDParameters[4] = 5.0; // N
     PIDParameters[5] = 1.0; // Beta
-    PIDParameters[6] = 0.02; // H
+    PIDParameters[6] = 0.05; // H
     PIDParameters[7] = 0.0; // integratorOn
 
     PID_ad = PIDParameters[2] / (PIDParameters[2] + PIDParameters[4] * PIDParameters[6]);

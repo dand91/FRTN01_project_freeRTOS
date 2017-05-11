@@ -1,5 +1,6 @@
 #include <Arduino_FreeRTOS.h>
 #include <semphr.h>
+#include "process.h"
 
 const int OFF = 0;
 const int BEAM = 1;
@@ -208,9 +209,11 @@ void TaskRun(void *pvParameters) {
       
      }else if(mode == 1){
 
+        simulationStep(PI_getParameters()[4]);
+
         double ref_ang = referenceGetRef();
              
-        double ang = analogRead(beam_pin); 
+        double ang = readAngle(); // analogRead(beam_pin); 
 
         Serial.print(" ref ");
         Serial.print(ref_ang);
@@ -236,7 +239,7 @@ void TaskRun(void *pvParameters) {
                       Serial.print(u_ang);
                        
                       // Set output
-                      analogWrite(beam_pin,u_ang);
+                      writeControlSignal(u_ang);//analogWrite(beam_pin,u_ang);
                       
                       // Update state
                       PI_updateState(u_ang);
@@ -252,8 +255,9 @@ void TaskRun(void *pvParameters) {
       
      }else if(mode == 2){
 
-        double pos = analogRead(ball_pin);
-        double ang = analogRead(beam_pin);
+        simulationStep(PI_getParameters()[4]);
+        double pos = readPosition();//analogRead(ball_pin);
+        double ang = readAngle();//analogRead(beam_pin);
         double ref_pos = referenceGetRef();
         double ang_ref;
         double u;
@@ -275,7 +279,7 @@ void TaskRun(void *pvParameters) {
         
                             double u_ang = limit(PI_calculateOutput(ang, ang_ref) + uff, uMin, uMax);
                             
-                            analogWrite(beam_pin,u_ang);
+                            writeControlSignal(u_ang);//analogWrite(beam_pin,u_ang);
                             
                             PI_updateState(u_ang - uff);
           

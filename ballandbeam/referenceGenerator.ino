@@ -157,9 +157,8 @@ void TaskReference(void *pvParameters) {
         ref_duration = timebase - millis();
         
         if(ref_duration > 0){
-
-          vTaskDelay(10 / portTICK_PERIOD_MS); 
-          
+          //vTaskDelay(ref_duration / portTICK_PERIOD_MS); 
+          delay(ref_duration);
         }
     }
 }
