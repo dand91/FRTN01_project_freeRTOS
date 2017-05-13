@@ -33,7 +33,7 @@ void simulationStep(double h) {
   x3 = x3_t;
   
   angle = x3;
-  pos = x1;
+  pos = x2;
 
 }
 

@@ -8,10 +8,10 @@
   void PI_init() {
 
     PIParameters[0] = 2; // K
-    PIParameters[1] = 30.0; // Ti
-    PIParameters[2] = 1.0; // Tr
+    PIParameters[1] = 1.0; // Ti
+    PIParameters[2] = 3.0; // Tr
     PIParameters[3] = 0.1; // Beta
-    PIParameters[4] = 0.1; // H
+    PIParameters[4] = 0.05; // H
     PIParameters[5] = 1.0; // integratorOn
     
     PI_I = 0.0;

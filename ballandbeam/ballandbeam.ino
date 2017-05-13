@@ -10,7 +10,7 @@ const int MANUAL = 0;
 const int SQUARE = 1;
 const int OPTIMAL = 2;
 
-int mode = 1;
+int mode = 2;
 int refMode = 1;
 
 double uMin = -10.0;
@@ -35,8 +35,8 @@ TaskHandle_t xHandle;
 
 void TaskRun( void *pvParameters );
 void TaskReference( void *pvParameters );
-void TaskOperationModeButtonRead( void *pvParameters );
-void TaskReferenceModeButtonRead( void *pvParameters );
+//void TaskOperationModeButtonRead( void *pvParameters );
+//void TaskReferenceModeButtonRead( void *pvParameters );
 
 // the setup function runs once when you press reset or power the board
 void setup() {
@@ -100,29 +100,29 @@ void setup() {
     
     );
 
-  xTaskCreate(
-    
-    TaskOperationModeButtonRead
-    ,  (const portCHAR *) "OperationsButton"
-    ,  64 // This stack size can be checked & adjusted by reading Highwater
-    ,  NULL
-    ,  1  // priority
-    ,  NULL 
-    
-    );
-    
-
-    xTaskCreate(
-    
-    TaskReferenceModeButtonRead
-    ,  (const portCHAR *) "ReferenceButton"
-    ,  64 // This stack size can be checked & adjusted by reading Highwater
-    ,  NULL
-    ,  1  // priority
-    ,  NULL 
-    
-    );
-    
+//  xTaskCreate(
+//    
+//    TaskOperationModeButtonRead
+//    ,  (const portCHAR *) "OperationsButton"
+//    ,  64 // This stack size can be checked & adjusted by reading Highwater
+//    ,  NULL
+//    ,  1  // priority
+//    ,  NULL 
+//    
+//    );
+//    
+//
+//    xTaskCreate(
+//    
+//    TaskReferenceModeButtonRead
+//    ,  (const portCHAR *) "ReferenceButton"
+//    ,  64 // This stack size can be checked & adjusted by reading Highwater
+//    ,  NULL
+//    ,  1  // priority
+//    ,  NULL 
+//    
+//    );
+//    
 //     vTaskStartScheduler();
      Serial.println("Tasks initiated");
 
@@ -146,48 +146,48 @@ float limit(float u, float umin, float umax) {
   return u;
 
 }
-
-void TaskOperationModeButtonRead(void *pvParameters) {
-    
-    (void) pvParameters;
-
-     vTaskPrioritySet( xHandle, tskIDLE_PRIORITY + 1);
-
-  for(;;){
-
-    if(digitalRead(1) == HIGH){
-        mode = OFF;
-     }else if(digitalRead(2) == HIGH){
-        mode = BEAM;
-     }else if(digitalRead(3) == HIGH){
-        mode = BALL;
-     }       
-
-     vTaskDelay(10 / portTICK_PERIOD_MS); 
-
-  }
-}
-
-void TaskReferenceModeButtonRead(void *pvParameters) {
-        
-    (void) pvParameters;
-
-     vTaskPrioritySet( xHandle, tskIDLE_PRIORITY + 1);
-
-  for(;;){
-
-    if(digitalRead(4) == HIGH){
-        refMode = MANUAL;
-     }else if(digitalRead(5) == HIGH){
-        refMode = SQUARE;
-     }else if(digitalRead(6) == HIGH){
-        refMode = OPTIMAL;
-     }       
-
-     vTaskDelay(10 / portTICK_PERIOD_MS); 
-
-  }
-}
+//
+//void TaskOperationModeButtonRead(void *pvParameters) {
+//    
+//    (void) pvParameters;
+//
+//     vTaskPrioritySet( xHandle, tskIDLE_PRIORITY + 1);
+//
+//  for(;;){
+//
+//    if(digitalRead(1) == HIGH){
+//        mode = OFF;
+//     }else if(digitalRead(2) == HIGH){
+//        mode = BEAM;
+//     }else if(digitalRead(3) == HIGH){
+//        mode = BALL;
+//     }       
+//
+//     vTaskDelay(10 / portTICK_PERIOD_MS); 
+//
+//  }
+//}
+//
+//void TaskReferenceModeButtonRead(void *pvParameters) {
+//        
+//    (void) pvParameters;
+//
+//     vTaskPrioritySet( xHandle, tskIDLE_PRIORITY + 1);
+//
+//  for(;;){
+//
+//    if(digitalRead(4) == HIGH){
+//        refMode = MANUAL;
+//     }else if(digitalRead(5) == HIGH){
+//        refMode = SQUARE;
+//     }else if(digitalRead(6) == HIGH){
+//        refMode = OPTIMAL;
+//     }       
+//
+//     vTaskDelay(10 / portTICK_PERIOD_MS); 
+//
+//  }
+//}
 
 void TaskRun(void *pvParameters) {
 
@@ -256,11 +256,20 @@ void TaskRun(void *pvParameters) {
      }else if(mode == 2){
 
         simulationStep(PI_getParameters()[4]);
+        
         double pos = readPosition();//analogRead(ball_pin);
         double ang = readAngle();//analogRead(beam_pin);
         double ref_pos = referenceGetRef();
         double ang_ref;
         double u;
+        
+        Serial.print(" ref ");
+        Serial.print(ref_pos);
+        Serial.print(" pos ");
+        Serial.print(pos);
+        Serial.print(" ang ");
+        Serial.print(ang);
+        Serial.println();
         
         phiff = referenceGetPhiff();
         uff = referenceGetUff();
@@ -271,13 +280,18 @@ void TaskRun(void *pvParameters) {
           
             if ( xSemaphoreTake( xSerialSemaphore_outer, ( TickType_t ) 5 ) == pdTRUE ){
 
-                    ang_ref = limit(PI_calculateOutput(pos, ref_pos) + phiff, uMin, uMax);
+                    ang_ref = limit(PID_calculateOutput(pos, ref_pos) + phiff, uMin, uMax);
+
+                    taken_inner = true;
 
                     while(taken_inner){
             
                         if ( xSemaphoreTake( xSerialSemaphore_inner, ( TickType_t ) 5 ) == pdTRUE ){
         
                             double u_ang = limit(PI_calculateOutput(ang, ang_ref) + uff, uMin, uMax);
+                                                     
+                            Serial.print(" u_ang ");
+                            Serial.print(u_ang);
                             
                             writeControlSignal(u_ang);//analogWrite(beam_pin,u_ang);
                             

@@ -13,10 +13,10 @@
 
   void PID_init() {
 
-    PIDParameters[0] = -0.1; // K
-    PIDParameters[1] = 0.0; // Ti
-    PIDParameters[2] = 1.5; // Td
-    PIDParameters[3] = 10.0; // Tr
+    PIDParameters[0] = -0.055; // K
+    PIDParameters[1] = 30.0; // Ti
+    PIDParameters[2] = 0.5; // Td
+    PIDParameters[3] = 4.0; // Tr
     PIDParameters[4] = 5.0; // N
     PIDParameters[5] = 1.0; // Beta
     PIDParameters[6] = 0.05; // H

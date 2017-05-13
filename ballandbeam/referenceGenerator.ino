@@ -28,6 +28,8 @@ void ref_init(){
   }
 
 void TaskReference(void *pvParameters) {
+  
+    Serial.println("Reference Generator Started");
         
     (void) pvParameters;
 
@@ -147,11 +149,6 @@ void TaskReference(void *pvParameters) {
           
          }    
       }
-      
-//        Serial.print(" test2 ");
-//        Serial.print(timeleft);
-//        Serial.print(" time ");
-//        Serial.println(ref);
         
         timebase += h;
         ref_duration = timebase - millis();
